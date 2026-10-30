@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: geosafe-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    numInstances: 1
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false
