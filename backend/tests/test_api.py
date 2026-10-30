@@ -101,3 +101,27 @@ def test_generalized_display_polygons_are_available():
 
     assert all(shape(feature["geometry"]).is_valid for feature in data["features"])
     assert len(response.content) < 1_000_000
+
+
+def test_pmtiles_range_and_cors():
+    response = client.get(
+        "/api/landslide.pmtiles",
+        headers={"Range": "bytes=0-126", "Origin": "http://localhost:5173"},
+    )
+    assert response.status_code == 206
+    assert len(response.content) == 127
+    assert response.content.startswith(b"PMTiles")
+    assert response.headers["content-range"].startswith("bytes 0-126/")
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert "Content-Range" in response.headers["access-control-expose-headers"]
+    head = client.head("/api/landslide.pmtiles")
+    assert head.status_code == 200
+    assert head.content == b""
+    assert head.headers["accept-ranges"] == "bytes"
+
+
+def test_archive_config_exposes_native_detail():
+    archive = client.get("/api/config").json()["landslide_archive"]
+    assert archive["url"] == "/api/landslide.pmtiles"
+    assert archive["max_zoom"] == 14
+    assert len(archive["bounds"]) == 4

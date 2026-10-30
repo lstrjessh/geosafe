@@ -1,4 +1,3 @@
-import type * as GeoJSON from "geojson";
 import { useEffect, useRef, useState } from "react";
 import MapView from "./Map";
 import Compare from "./Compare";
@@ -46,10 +45,11 @@ export default function App() {
     [rasters, setRasters] = useState<(File | null)[]>([null, null, null]);
   const [bounds, setBounds] = useState<Bounds>(initialBounds),
     [region, setRegion] = useState(initialBounds.map(String));
-  const [polygons, setPolygons] = useState<GeoJSON.FeatureCollection | null>(
-      null,
-    ),
-    [sourceError, setSourceError] = useState("");
+  const [archive, setArchive] = useState<{
+    bounds: Bounds;
+    max_zoom: number;
+  } | null>(null);
+  const [sourceError, setSourceError] = useState("");
   const [sourceLoading, setSourceLoading] = useState(true),
     [visible, setVisible] = useState(true),
     [regionError, setRegionError] = useState("");
@@ -84,14 +84,14 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController();
     setSourceLoading(true);
-    setPolygons(null);
+    setArchive(null);
     setSourceError("");
-    request<GeoJSON.FeatureCollection>(
-      `/api/susceptibility?bounds=${bounds.join(",")}`,
+    request<{ landslide_archive: { bounds: Bounds; max_zoom: number } | null }>(
+      "/api/config",
       { signal: controller.signal },
     )
       .then((data) => {
-        setPolygons(data);
+        setArchive(data.landslide_archive);
         setSourceLoading(false);
       })
       .catch((error) => {
@@ -101,7 +101,7 @@ export default function App() {
         }
       });
     return () => controller.abort();
-  }, [bounds]);
+  }, []);
 
   useEffect(() => {
     if (!selected) return;
@@ -313,6 +313,14 @@ export default function App() {
   }
   const busy =
     submitting || (!!job && ["queued", "running"].includes(job.status));
+  const archiveOverlaps =
+    archive &&
+    !(
+      bounds[2] < archive.bounds[0] ||
+      bounds[0] > archive.bounds[2] ||
+      bounds[3] < archive.bounds[1] ||
+      bounds[1] > archive.bounds[3]
+    );
   const result = job?.status === "succeeded" ? job.result : null;
 
   return (
@@ -921,7 +929,9 @@ export default function App() {
                     native archive detail.
                   </p>
                   <p>
-                    {polygons?.features.length || 0} displayed polygon fragments
+                    {archive
+                      ? `Original PMTiles archive · maximum zoom ${archive.max_zoom}`
+                      : "Archive unavailable"}
                   </p>
                 </div>
                 <div className="source-card">
@@ -982,9 +992,9 @@ export default function App() {
                   ? "Loading susceptibility…"
                   : sourceError
                     ? "Source unavailable"
-                    : polygons?.features.length
-                      ? "Susceptibility layer ready"
-                      : "No mapped coverage in this region"}
+                    : archiveOverlaps
+                      ? "Susceptibility archive ready"
+                      : "Outside archive bounds"}
               </span>
             </div>
             <div className="map-actions">
@@ -1013,7 +1023,6 @@ export default function App() {
           )}
           <MapView
             bounds={bounds}
-            polygons={polygons}
             selected={selected}
             onSelect={select}
             visible={visible}

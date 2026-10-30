@@ -1,15 +1,17 @@
 import type * as GeoJSON from "geojson";
 import { useEffect, useRef, useState } from "react";
+import { Protocol } from "pmtiles";
 import * as maplibregl from "maplibre-gl";
 import mapWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 maplibregl.setWorkerUrl(mapWorkerUrl);
+const protocol = new Protocol();
+maplibregl.addProtocol("pmtiles", protocol.tile);
 import { type GeoJSONSource, type Map as MapInstance } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { API, type Bounds, type Job, type Observation } from "./api";
 
 type Props = {
   bounds: Bounds;
-  polygons: GeoJSON.FeatureCollection | null;
   selected: [number, number] | null;
   onSelect: (lat: number, lon: number) => void;
   visible: boolean;
@@ -28,7 +30,6 @@ const empty: GeoJSON.FeatureCollection = {
 
 export default function MapView({
   bounds,
-  polygons,
   selected,
   onSelect,
   visible,
@@ -74,11 +75,21 @@ export default function MapView({
       "bottom-right",
     );
     instance.on("load", () => {
-      instance.addSource("noah", { type: "geojson", data: empty });
+      const archiveUrl = new URL(
+        `${API}/api/landslide.pmtiles`,
+        window.location.origin,
+      ).href;
+      instance.addSource("noah", {
+        type: "vector",
+        url: `pmtiles://${archiveUrl}`,
+        attribution:
+          'Landslide data: <a href="https://noah.upd.edu.ph/">UP RI NOAH</a>',
+      });
       instance.addLayer({
         id: "noah-fill",
         type: "fill",
         source: "noah",
+        "source-layer": "landslide",
         paint: {
           "fill-color": [
             "match",
@@ -98,6 +109,7 @@ export default function MapView({
         id: "noah-line",
         type: "line",
         source: "noah",
+        "source-layer": "landslide",
         paint: {
           "line-color": "#8e5738",
           "line-width": 0.5,
@@ -227,12 +239,6 @@ export default function MapView({
     if (ready && map.current)
       map.current.setPaintProperty("noah-fill", "fill-opacity", opacity);
   }, [ready, opacity]);
-  useEffect(() => {
-    if (ready && map.current)
-      (map.current.getSource("noah") as GeoJSONSource).setData(
-        polygons || empty,
-      );
-  }, [ready, polygons]);
   useEffect(() => {
     if (ready && map.current) {
       map.current.setLayoutProperty(

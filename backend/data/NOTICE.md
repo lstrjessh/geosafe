@@ -7,3 +7,5 @@ Source: [UP RI NOAH](https://noah.upd.edu.ph/). Copied from GAKIT’s `lanao-del
 The archive has limited geographic coverage. No mapped polygon at a location is not evidence of safety. Map display uses generalized tiles; point assessment uses the archive’s maximum zoom.
 
 `noah-display.geojson` is a generalized derivative for map display: roughly 22 m vertex simplification, with fragments and holes below about 600 m² omitted. Do not use this layer for exact boundary assessment. Point queries use the original PMTiles archive.
+
+The main application now streams the original PMTiles directly. The display GeoJSON remains only for the compatibility API.

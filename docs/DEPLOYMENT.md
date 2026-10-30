@@ -34,3 +34,5 @@ The frontend variable is embedded at build time. A Vercel redeploy is needed to 
 The backend reads public Earth Search metadata, public Sentinel-2 COGs, and public Copernicus DEM assets. No Google Earth Engine account is used. The map basemap comes from OpenFreeMap. Upstream services and internet access must be available.
 
 For sustained use, size the Render instance based on measured memory and processing times. Free instances may cold-start and do not provide durable job state. This configuration prepares deployment; it does not provision services or claim that the app has already been deployed.
+
+The PMTiles endpoint must preserve HTTP Range requests and return `206 Partial Content`. CORS exposes `Content-Range`, `Content-Length`, `Accept-Ranges`, and `ETag`. The allowed origin must still match your frontend URL exactly.

@@ -29,7 +29,7 @@ npm run build --prefix frontend
 
 ## Data and interpretation
 
-NOAH susceptibility and satellite indicators are separate products. NOAH uses `LH` classes 1/2/3; no polygon means no mapped class, not safety. The map uses pre-generalized display polygons. Point lookup reads the original archive at its highest zoom.
+NOAH susceptibility and satellite indicators are separate products. NOAH uses `LH` classes 1/2/3; no polygon means no mapped class, not safety. The map streams the original PMTiles archive using byte-range requests, selecting detail at the current zoom. Point lookup reads the same archive at its highest zoom. The generalized GeoJSON endpoint is retained for compatibility, but is no longer used for the main map.
 
 Satellite inputs are up to four lowest-cloud Sentinel-2 L2A scenes per period from Earth Search. Reprocessed copies of a tile/day are deduplicated. Catalog scale/offset metadata is applied; only SCL 4/5/6 pixels are retained. Period composites use median indices. Coverage, failed scenes, and source IDs are recorded.
 

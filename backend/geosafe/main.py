@@ -16,6 +16,7 @@ import rasterio
 from fastapi import FastAPI, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
+from pmtiles.reader import Reader
 from pydantic import BaseModel, Field, model_validator
 from rasterio.warp import transform
 from shapely.geometry import box, mapping, shape
@@ -35,8 +36,9 @@ origins = os.getenv(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip().rstrip("/") for o in origins if o.strip()],
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_methods=["GET", "HEAD", "POST"],
+    allow_headers=["Content-Type", "Range", "If-Range"],
+    expose_headers=["Accept-Ranges", "Content-Range", "Content-Length", "ETag"],
     allow_credentials=False,
 )
 ARCHIVE = Path(
@@ -82,6 +84,9 @@ def config():
     return {
         "default_bounds": [124.20, 8.18, 124.28, 8.26],
         "susceptibility_available": ARCHIVE.is_file(),
+        "landslide_archive": archive_info(ARCHIVE.stat().st_mtime_ns)
+        if ARCHIVE.is_file()
+        else None,
         "sources": {
             "susceptibility": "UP RI NOAH (LH 1/2/3)",
             "satellite": "Earth Search / Sentinel-2 L2A",
@@ -92,6 +97,37 @@ def config():
         "max_scenes_per_period": 4,
         "result_ttl_seconds": jobs.TTL,
     }
+
+
+@lru_cache(maxsize=1)
+def archive_info(modified):
+    with ARCHIVE.open("rb") as file:
+
+        def read(offset, length):
+            file.seek(offset)
+            return file.read(length)
+
+        header = Reader(read).header()
+    return {
+        "url": "/api/landslide.pmtiles",
+        "bounds": [
+            header[key] / 1e7
+            for key in ["min_lon_e7", "min_lat_e7", "max_lon_e7", "max_lat_e7"]
+        ],
+        "min_zoom": header["min_zoom"],
+        "max_zoom": header["max_zoom"],
+    }
+
+
+@app.api_route("/api/landslide.pmtiles", methods=["GET", "HEAD"])
+def landslide_archive():
+    if not ARCHIVE.is_file():
+        raise HTTPException(503, "Susceptibility archive is not configured.")
+    return FileResponse(
+        ARCHIVE,
+        media_type="application/vnd.pmtiles",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @lru_cache(maxsize=1)
