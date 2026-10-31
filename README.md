@@ -1,6 +1,6 @@
 # GeoSafe
 
-A map-based workspace for landslide susceptibility, satellite change analysis, and measured sensor observations. 
+A map-based workspace for landslide susceptibility, satellite change analysis, and measured sensor observations.
 
 Its landslide assessment tools are also used in GAKIT.
 
