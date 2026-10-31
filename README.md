@@ -2,7 +2,7 @@
 
 A map-based workspace for landslide susceptibility, satellite change analysis, and measured sensor observations.
 
-Its landslide assessment tools are also used in GAKIT.
+Its landslide assessment tools are integrated in GAKIT.
 
 The original version was submitted to the PhilSA Space Business Innovation Challenge in 2025.
 
