@@ -1,6 +1,8 @@
 # GeoSafe
 
-A map-based workspace for landslide susceptibility, satellite change analysis, and measured sensor observations. Developed from work submitted to the PhilSA Space Business Innovation Challenge 2025.
+A map-based workspace for landslide susceptibility, satellite change analysis, and measured sensor observations. 
+
+The original version was submitted to the PhilSA Space Business Innovation Challenge in 2025.
 
 ![GeoSafe workspace](docs/images/geosafe-ui.png)
 
